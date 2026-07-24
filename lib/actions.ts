@@ -392,13 +392,38 @@ export async function cancelTransfer(transferId: string) {
     data: { status: "ANNULE" },
   });
 
-  // Annuler tous les versements ENTREE associés à ce transfert
-  const paymentsToCancel = transfer.payments.filter((p) => p.direction === "ENTREE");
-  for (const p of paymentsToCancel) {
-    await prisma.payment.update({
-      where: { id: p.id },
-      data: { status: "ANNULE" },
+  // Recenser tous les versements liés à ce transfert :
+  //  - soit directement (payment.transferId),
+  //  - soit par imputation (PaymentAllocation) — cas des versements faits
+  //    depuis la page « Versement », dont le transferId est null.
+  const allocs = await prisma.paymentAllocation.findMany({
+    where: { transferId },
+    select: { paymentId: true },
+  });
+  const paymentIds = new Set<string>();
+  transfer.payments.forEach((p) => paymentIds.add(p.id));
+  allocs.forEach((a) => paymentIds.add(a.paymentId));
+
+  // Un versement n'est annulé que s'il ne finance plus aucun transfert actif.
+  // (Un versement réparti sur plusieurs transferts, dont certains encore actifs,
+  //  reste valable pour la partie qui les concerne.)
+  for (const pid of paymentIds) {
+    const payment = await prisma.payment.findUnique({
+      where: { id: pid },
+      include: { transfer: true, allocations: { include: { transfer: true } } },
     });
+    if (!payment || payment.status === "ANNULE" || payment.direction !== "ENTREE") {
+      continue;
+    }
+    const financeEncoreUnActif =
+      (payment.transfer && payment.transfer.status !== "ANNULE") ||
+      payment.allocations.some((a) => a.transfer && a.transfer.status !== "ANNULE");
+    if (!financeEncoreUnActif) {
+      await prisma.payment.update({
+        where: { id: pid },
+        data: { status: "ANNULE" },
+      });
+    }
   }
 
   revalidatePath(`/transferts/${transferId}`);
