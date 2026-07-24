@@ -51,6 +51,7 @@ export default async function ClientDetailPage({
       dateISO: t.createdAt.toISOString(),
       amount: t.amount,
       fee: t.fee,
+      withdrawalFee: t.withdrawalFee,
       total: t.total,
       paid,
       remaining: t.total - paid,

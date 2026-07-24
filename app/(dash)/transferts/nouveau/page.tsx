@@ -62,6 +62,7 @@ export default async function NewTransferPage() {
               name: c.name,
               feeBase: rule?.base ?? null,
               feePerBase: rule?.feePerBase ?? null,
+              withdrawalFeePercent: c.withdrawalFeePercent ?? null,
             };
           })}
           ussdPrefix={settings?.ussdPrefix ?? "#145#1"}

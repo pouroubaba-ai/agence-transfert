@@ -11,6 +11,7 @@ type Channel = {
   name: string;
   feeBase: number | null;
   feePerBase: number | null;
+  withdrawalFeePercent: number | null;
 };
 
 const toNum = (s: string) =>
@@ -49,6 +50,7 @@ export default function TransferForm({
   const [feeBase, setFeeBase] = useState(s(first?.feeBase));
   const [feePerBase, setFeePerBase] = useState(s(first?.feePerBase));
   const [manualFee, setManualFee] = useState("");
+  const [withdrawalOn, setWithdrawalOn] = useState(false);
   const [initialPayment, setInitialPayment] = useState("");
   const [beneficiaryPhone, setBeneficiaryPhone] = useState("");
   const [resetKey, setResetKey] = useState(0);
@@ -74,6 +76,7 @@ export default function TransferForm({
       setFeeBase(s(ch?.feeBase));
       setFeePerBase(s(ch?.feePerBase));
       setManualFee("");
+      setWithdrawalOn(false);
       setBeneficiaryPhone("");
       setShowNewClientModal(false);
       setResetKey((k) => k + 1);
@@ -129,7 +132,18 @@ export default function TransferForm({
     if (hasFeeRule) return (amountNum / toNum(feeBase)) * toNum(feePerBase);
     return 0;
   }, [amountNum, feeBase, feePerBase, manualFee, isManualFee, hasFeeRule]);
-  const total = amountNum + clientFee;
+
+  // Frais de retrait : pourcentage du canal, appliqué automatiquement si
+  // l'interrupteur est allumé. Jamais commissionnés, ajoutés au montant envoyé.
+  const wPercent = currentChannel?.withdrawalFeePercent ?? null;
+  const hasWithdrawalRule = wPercent != null && wPercent > 0;
+  const withdrawalFee = useMemo(() => {
+    if (!withdrawalOn || !hasWithdrawalRule) return 0;
+    return (amountNum * (wPercent as number)) / 100;
+  }, [withdrawalOn, hasWithdrawalRule, amountNum, wPercent]);
+
+  const sentToBeneficiary = amountNum + withdrawalFee;
+  const total = amountNum + clientFee + withdrawalFee;
 
   // Vérifie si le client est nouveau
   const isNewClient = clientLabel.trim() !== "" && !clients.some((c) => c.name.toLowerCase() === clientLabel.toLowerCase());
@@ -178,6 +192,7 @@ export default function TransferForm({
       setFeeBase(s(ch?.feeBase));
       setFeePerBase(s(ch?.feePerBase));
       setManualFee("");
+      setWithdrawalOn(false);
       setBeneficiaryPhone("");
       setResetKey((k) => k + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -194,7 +209,8 @@ export default function TransferForm({
 
     const formData = new FormData(form);
     const beneficiaryPhoneCopy = beneficiaryPhone;
-    const amountCopy = amount;
+    // Le bénéficiaire reçoit le montant + les frais de retrait éventuels
+    const amountCopy = String(Math.round(sentToBeneficiary));
 
     // Enlever le '+' et les espaces du numéro pour l'USSD
     const phoneForUSSD = beneficiaryPhoneCopy.replace(/^\+/, "").replace(/\s/g, "");
@@ -220,6 +236,7 @@ export default function TransferForm({
       setFeeBase(s(ch?.feeBase));
       setFeePerBase(s(ch?.feePerBase));
       setManualFee("");
+      setWithdrawalOn(false);
       setBeneficiaryPhone("");
       setResetKey((k) => k + 1);
 
@@ -316,7 +333,30 @@ export default function TransferForm({
                 placeholder="Ex. 200 000"
                 className={inputCls}
               />
+
+              {/* Frais de retrait : interrupteur + aperçu automatique */}
+              {hasWithdrawalRule && (
+                <div className="mt-2">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={withdrawalOn}
+                      onChange={(e) => setWithdrawalOn(e.target.checked)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="text-sm">Ajouter les frais de retrait ({wPercent}%)</span>
+                  </label>
+                  {withdrawalOn && amountNum > 0 && (
+                    <p className="mt-1 text-xs text-primary bg-primary/10 rounded-lg px-3 py-2">
+                      Frais de retrait : <b>{formatFCFA(withdrawalFee)}</b> · Envoyé au bénéficiaire : <b>{formatFCFA(sentToBeneficiary)}</b>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Montant réellement envoyé au bénéficiaire (base + frais de retrait) */}
+            <input type="hidden" name="withdrawalFee" value={String(Math.round(withdrawalFee))} />
 
             <div className="rounded-xl border border-border p-4 bg-background/40">
               <div className="flex items-center justify-between mb-2">
@@ -391,6 +431,18 @@ export default function TransferForm({
                 <span className="text-muted">Frais client</span>
                 <span className="font-medium">{formatFCFA(clientFee)}</span>
               </div>
+              {withdrawalFee > 0 && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Frais de retrait</span>
+                    <span className="font-medium">{formatFCFA(withdrawalFee)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Envoyé au bénéficiaire</span>
+                    <span className="font-medium">{formatFCFA(sentToBeneficiary)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between border-t border-border pt-2">
                 <span className="font-semibold">Le client te doit</span>
                 <span className="font-bold text-primary">{formatFCFA(total)}</span>

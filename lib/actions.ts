@@ -190,6 +190,7 @@ function readChannelFees(formData: FormData) {
     generalFeePerBase: optNum("feePerBase"),
     clientFeeBase: optNum("feeBase"),
     clientFeePerBase: optNum("feePerBase"),
+    withdrawalFeePercent: optNum("withdrawalFeePercent"),
   };
 }
 
@@ -303,6 +304,10 @@ export async function createTransfer(_prev: unknown, formData: FormData) {
         : 0;
   }
 
+  // Frais de retrait ajoutés (optionnels). Reversés au bénéficiaire, jamais
+  // commissionnés : on les ajoute au total mais pas à la base des frais.
+  const withdrawalFee = num(formData.get("withdrawalFee"));
+
   // Garde-fou : plafond de l'agent
   if (user.maxAmount != null && amount > user.maxAmount) {
     throw new Error(
@@ -317,7 +322,8 @@ export async function createTransfer(_prev: unknown, formData: FormData) {
       channelId: str(formData.get("channelId")),
       amount,
       fee,
-      total: amount + fee,
+      withdrawalFee,
+      total: amount + fee + withdrawalFee,
       feeBase,
       feePerBase,
       feeManual: hasManual,

@@ -28,6 +28,7 @@ export default async function TransfersPage() {
       channelName: t.channel.name,
       amount: t.amount,
       fee: t.fee,
+      withdrawalFee: t.withdrawalFee,
       paid,
       remaining: t.total - paid,
       status: t.status,

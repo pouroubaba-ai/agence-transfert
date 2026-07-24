@@ -15,6 +15,7 @@ export type TransferRow = {
   channelName: string;
   amount: number;
   fee: number;
+  withdrawalFee: number;
   paid: number;
   remaining: number;
   status: string;
@@ -90,6 +91,11 @@ export default function TransfersList({ rows }: { rows: TransferRow[] }) {
                       <p className="text-[11px] text-muted">
                         frais {formatFCFA(r.fee)}
                       </p>
+                      {r.withdrawalFee > 0 && (
+                        <p className="text-[11px] text-muted">
+                          retrait {formatFCFA(r.withdrawalFee)}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -121,7 +127,7 @@ export default function TransfersList({ rows }: { rows: TransferRow[] }) {
 
           <div className="card hidden overflow-hidden sm:block">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
+            <table className="w-full min-w-[920px] text-sm">
               <thead>
                 <tr className="text-left text-muted border-b border-border">
                   <th className="px-5 py-3 font-medium">Date</th>
@@ -129,6 +135,7 @@ export default function TransfersList({ rows }: { rows: TransferRow[] }) {
                   <th className="px-5 py-3 font-medium">Canal</th>
                   <th className="px-5 py-3 font-medium text-right">Montant</th>
                   <th className="px-5 py-3 font-medium text-right">Frais</th>
+                  <th className="px-5 py-3 font-medium text-right">Retrait</th>
                   <th className="px-5 py-3 font-medium text-right">Versé</th>
                   <th className="px-5 py-3 font-medium text-right">Reste dû</th>
                   <th className="px-5 py-3 font-medium">Statut</th>
@@ -155,6 +162,9 @@ export default function TransfersList({ rows }: { rows: TransferRow[] }) {
                     </td>
                     <td className="px-5 py-3 text-right text-muted whitespace-nowrap">
                       {formatFCFA(r.fee)}
+                    </td>
+                    <td className="px-5 py-3 text-right text-muted whitespace-nowrap">
+                      {r.withdrawalFee > 0 ? formatFCFA(r.withdrawalFee) : "—"}
                     </td>
                     <td className="px-5 py-3 text-right text-primary whitespace-nowrap">
                       {formatFCFA(r.paid)}

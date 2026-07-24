@@ -21,6 +21,7 @@ export type FileTransfer = {
   dateISO: string;
   amount: number;
   fee: number;
+  withdrawalFee: number;
   total: number;
   paid: number;
   remaining: number;
@@ -145,6 +146,11 @@ export default function ClientFile({
                       <p className="text-[11px] text-muted">
                         frais {formatFCFA(t.fee)}
                       </p>
+                      {t.withdrawalFee > 0 && (
+                        <p className="text-[11px] text-muted">
+                          retrait {formatFCFA(t.withdrawalFee)}
+                        </p>
+                      )}
                       <p className="text-[11px] text-primary font-medium mt-1">
                         Versé {formatFCFA(t.paid)}
                       </p>

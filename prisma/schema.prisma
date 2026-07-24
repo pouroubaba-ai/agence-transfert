@@ -99,6 +99,11 @@ model Channel {
   clientFeeBase    Float?
   clientFeePerBase Float?
 
+  // Frais de retrait (au Mali) que le client peut choisir d'ajouter au transfert,
+  // exprimés en pourcentage. Simple ajout reversé au bénéficiaire : jamais
+  // commissionné par l'agence.
+  withdrawalFeePercent Float?
+
   createdAt DateTime @default(now())
 
   transfers Transfer[]
@@ -119,9 +124,10 @@ model Transfer {
   channelId String
   channel   Channel @relation(fields: [channelId], references: [id])
 
-  amount Float // montant envoyé au bénéficiaire
-  fee    Float // frais facturés au client
-  total  Float // amount + fee, ce que le client doit
+  amount Float // montant de base (sur lequel la commission est calculée)
+  fee    Float // frais/commission facturés au client
+  withdrawalFee Float @default(0) // frais de retrait ajoutés, reversés au bénéficiaire (non commissionnés)
+  total  Float // amount + fee + withdrawalFee, ce que le client doit
 
   // Instantané de la règle de frais appliquée à CE transfert (issue du canal,
   // éventuellement modifiée). feeManual = true si le montant a été saisi à la main.

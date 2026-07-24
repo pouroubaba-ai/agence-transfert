@@ -7,6 +7,7 @@ type Channel = {
   name: string;
   clientFeeBase: number | null;
   clientFeePerBase: number | null;
+  withdrawalFeePercent: number | null;
 };
 
 const s = (n: number | null | undefined) => (n != null ? String(n) : "");
@@ -59,6 +60,23 @@ export default function ChannelForm({ channel }: { channel?: Channel }) {
               className={input}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Frais de retrait (optionnel) */}
+      <div>
+        <p className="text-xs text-muted mb-1">
+          Frais de retrait (optionnel) — ajoutés au montant, jamais commissionnés
+        </p>
+        <div>
+          <label className="block text-xs text-muted mb-1">Pourcentage (%)</label>
+          <input
+            name="withdrawalFeePercent"
+            inputMode="decimal"
+            defaultValue={s(channel?.withdrawalFeePercent)}
+            placeholder="2"
+            className={input}
+          />
         </div>
       </div>
 

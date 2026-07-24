@@ -89,6 +89,20 @@ export default async function TransferDetailPage({
                 </span>
                 <span className="font-medium">{formatFCFA(t.fee)}</span>
               </div>
+              {t.withdrawalFee > 0 && (
+                <>
+                  <div className={infoCls}>
+                    <span className="text-muted">Frais de retrait</span>
+                    <span className="font-medium">{formatFCFA(t.withdrawalFee)}</span>
+                  </div>
+                  <div className={infoCls}>
+                    <span className="text-muted">Envoyé au bénéficiaire</span>
+                    <span className="font-medium">
+                      {formatFCFA(t.amount + t.withdrawalFee)}
+                    </span>
+                  </div>
+                </>
+              )}
               <div className={infoCls}>
                 <span className="text-muted">Total dû par le client</span>
                 <span className="font-bold text-primary">
