@@ -39,6 +39,7 @@ type TransferLite = {
 type PaymentLite = {
   direction: string; // ENTREE
   amount: number;
+  status?: string; // ENREGISTRE | ANNULE — un versement annulé ne compte pas
 };
 
 /**
@@ -54,7 +55,7 @@ export function clientBalance(
     .filter((t) => t.status !== "ANNULE")
     .reduce((s, t) => s + t.total, 0);
   const paid = payments
-    .filter((p) => p.direction === "ENTREE")
+    .filter((p) => p.direction === "ENTREE" && p.status !== "ANNULE")
     .reduce((s, p) => s + p.amount, 0);
   return due - paid;
 }
@@ -91,7 +92,7 @@ export function transferRemaining(
   payments: PaymentLite[]
 ): number {
   const paid = payments
-    .filter((p) => p.direction === "ENTREE")
+    .filter((p) => p.direction === "ENTREE" && p.status !== "ANNULE")
     .reduce((s, p) => s + p.amount, 0);
   return total - paid;
 }

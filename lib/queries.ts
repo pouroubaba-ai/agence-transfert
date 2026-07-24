@@ -101,11 +101,18 @@ export async function getDashboardData(agencyId: string, range?: Range) {
   const clientDetails = clientList
     .map((c) => {
       const total = sum(
-        transfers.filter((t) => t.clientId === c.id).map((t) => t.total)
+        transfers
+          .filter((t) => t.clientId === c.id && t.status !== "ANNULE")
+          .map((t) => t.total)
       );
       const paid = sum(
         payments
-          .filter((p) => p.clientId === c.id && p.direction === "ENTREE")
+          .filter(
+            (p) =>
+              p.clientId === c.id &&
+              p.direction === "ENTREE" &&
+              p.status !== "ANNULE"
+          )
           .map((p) => p.amount)
       );
       return { id: c.id, name: c.name, total, paid, remaining: total - paid };

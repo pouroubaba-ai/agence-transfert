@@ -38,7 +38,7 @@ export default async function ClientDetailPage({
     transferred: active.reduce((s, t) => s + t.amount, 0),
     commissions: active.reduce((s, t) => s + t.fee, 0),
     paid: client.payments
-      .filter((p) => p.direction === "ENTREE")
+      .filter((p) => p.direction === "ENTREE" && p.status !== "ANNULE")
       .reduce((s, p) => s + p.amount, 0),
     remaining: balance,
   };
