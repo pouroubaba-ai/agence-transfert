@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: "Gestion des transferts, clients et soldes",
   appleWebApp: {
     capable: true,
-    title: "Transfert",
+    title: "LS",
     statusBarStyle: "default",
   },
 };

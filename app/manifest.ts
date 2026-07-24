@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Agence Transfert",
-    short_name: "Transfert",
+    short_name: "LS",
     description: "Grand livre digital — transferts, clients et soldes",
     start_url: "/",
     display: "standalone",
