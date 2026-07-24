@@ -93,8 +93,9 @@ export default function OrangePasswordForm({
         <label className="block text-sm font-medium mb-1">Mot de passe Orange Money *</label>
         <input
           type="text"
+          inputMode="numeric"
           value={ussdPassword}
-          onChange={(e) => setUssdPassword(e.target.value)}
+          onChange={(e) => setUssdPassword(e.target.value.replace(/[^\d]/g, ""))}
           placeholder="Rentre ton mot de passe"
           className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-white"
         />

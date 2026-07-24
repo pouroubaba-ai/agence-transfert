@@ -50,7 +50,6 @@ export default function TransferForm({
   const [feePerBase, setFeePerBase] = useState(s(first?.feePerBase));
   const [manualFee, setManualFee] = useState("");
   const [initialPayment, setInitialPayment] = useState("");
-  const [beneficiaryName, setBeneficiaryName] = useState("");
   const [beneficiaryPhone, setBeneficiaryPhone] = useState("");
   const [resetKey, setResetKey] = useState(0);
   const [pendingUSSD, setPendingUSSD] = useState<string | null>(null);
@@ -75,7 +74,6 @@ export default function TransferForm({
       setFeeBase(s(ch?.feeBase));
       setFeePerBase(s(ch?.feePerBase));
       setManualFee("");
-      setBeneficiaryName("");
       setBeneficiaryPhone("");
       setShowNewClientModal(false);
       setResetKey((k) => k + 1);
@@ -180,7 +178,6 @@ export default function TransferForm({
       setFeeBase(s(ch?.feeBase));
       setFeePerBase(s(ch?.feePerBase));
       setManualFee("");
-      setBeneficiaryName("");
       setBeneficiaryPhone("");
       setResetKey((k) => k + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -223,7 +220,6 @@ export default function TransferForm({
       setFeeBase(s(ch?.feeBase));
       setFeePerBase(s(ch?.feePerBase));
       setManualFee("");
-      setBeneficiaryName("");
       setBeneficiaryPhone("");
       setResetKey((k) => k + 1);
 
@@ -367,29 +363,18 @@ export default function TransferForm({
 
           <div key={resetKey} className="card p-5 space-y-4">
             <h2 className="font-semibold">Bénéficiaire</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Nom du bénéficiaire</label>
-                <input
-                  name="beneficiaryName"
-                  value={beneficiaryName}
-                  onChange={(e) => setBeneficiaryName(e.target.value)}
-                  placeholder="Nom complet"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Numéro du bénéficiaire {ussdPassword && "*"}
-                </label>
-                <input
-                  name="beneficiaryPhone"
-                  value={beneficiaryPhone}
-                  onChange={(e) => setBeneficiaryPhone(e.target.value)}
-                  placeholder="Numéro de téléphone"
-                  className={inputCls}
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Numéro du bénéficiaire {ussdPassword && "*"}
+              </label>
+              <input
+                name="beneficiaryPhone"
+                inputMode="numeric"
+                value={beneficiaryPhone}
+                onChange={(e) => setBeneficiaryPhone(digits(e.target.value))}
+                placeholder="Numéro de téléphone"
+                className={inputCls}
+              />
             </div>
           </div>
         </div>
