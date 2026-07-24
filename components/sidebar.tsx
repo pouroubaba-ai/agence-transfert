@@ -69,8 +69,8 @@ export default function Sidebar({
           ☰
         </button>
         <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary font-bold text-white">
-            ₣
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-bold tracking-tight text-white">
+            LS
           </div>
           <p className="truncate text-sm font-semibold">{agency}</p>
         </div>
@@ -92,8 +92,8 @@ export default function Sidebar({
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary font-bold text-white">
-              ₣
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold tracking-tight text-white">
+              LS
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{agency}</p>
