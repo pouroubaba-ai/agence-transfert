@@ -59,6 +59,8 @@ export default function TransferForm({
   // Modale pour nouveau client
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [pendingNewClient, setPendingNewClient] = useState(false);
+  // Vrai quand la confirmation du nouveau client doit ensuite lancer l'USSD.
+  const [ussdAfterConfirm, setUssdAfterConfirm] = useState(false);
 
   const [state, formAction, pending] = useActionState(createTransfer, null);
   const result = state as { ok?: boolean; error?: string } | null;
@@ -173,6 +175,11 @@ export default function TransferForm({
     const form = formRef.current;
     if (!form) return;
 
+    // Capturer les infos USSD avant toute réinitialisation.
+    const wasUSSD = ussdAfterConfirm;
+    const phoneForUSSD = beneficiaryPhone.replace(/^\+/, "").replace(/\s/g, "");
+    const amountSent = String(Math.round(sentToBeneficiary));
+
     const formData = new FormData(form);
     formData.set("createNewClient", "true");
     formData.set("newClientName", clientLabel);
@@ -183,22 +190,52 @@ export default function TransferForm({
     const result = await createTransfer(null, formData);
 
     if (result?.ok) {
-      setAmount("");
-      setInitialPayment("");
-      setClientLabel(defaultName);
-      setSelectedClientId(defaultClientId);
-      setIsAnonymous(defaultName.trim().toLowerCase() === "client");
-      const ch = channels.find((c) => c.id === channelId);
-      setFeeBase(s(ch?.feeBase));
-      setFeePerBase(s(ch?.feePerBase));
-      setManualFee("");
-      setWithdrawalOn(false);
-      setBeneficiaryPhone("");
-      setResetKey((k) => k + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (wasUSSD) {
+        await finishUSSD(phoneForUSSD, amountSent);
+      } else {
+        setAmount("");
+        setInitialPayment("");
+        setClientLabel(defaultName);
+        setSelectedClientId(defaultClientId);
+        setIsAnonymous(defaultName.trim().toLowerCase() === "client");
+        const ch = channels.find((c) => c.id === channelId);
+        setFeeBase(s(ch?.feeBase));
+        setFeePerBase(s(ch?.feePerBase));
+        setManualFee("");
+        setWithdrawalOn(false);
+        setBeneficiaryPhone("");
+        setResetKey((k) => k + 1);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
 
+    setUssdAfterConfirm(false);
     setPendingNewClient(false);
+  };
+
+  // Post-traitement commun après création réussie d'un transfert par USSD :
+  // copie du numéro, réinitialisation, puis lancement de l'USSD.
+  const finishUSSD = async (phoneForUSSD: string, amountSent: string) => {
+    try {
+      await navigator.clipboard.writeText(phoneForUSSD);
+    } catch {
+      console.log("Copie du numéro échouée");
+    }
+    setAmount("");
+    setInitialPayment("");
+    setClientLabel(defaultName);
+    setSelectedClientId(defaultClientId);
+    setIsAnonymous(defaultName.trim().toLowerCase() === "client");
+    const ch = channels.find((c) => c.id === channelId);
+    setFeeBase(s(ch?.feeBase));
+    setFeePerBase(s(ch?.feePerBase));
+    setManualFee("");
+    setWithdrawalOn(false);
+    setBeneficiaryPhone("");
+    setResetKey((k) => k + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const ussdCode = `${ussdPrefix}*${amountSent}*${phoneForUSSD}*${ussdPassword}${ussdSuffix}`;
+    setTimeout(() => setPendingUSSD(ussdCode), 800);
   };
 
   const handleUSSDTransfer = async () => {
@@ -206,6 +243,16 @@ export default function TransferForm({
 
     const form = formRef.current;
     if (!form) return;
+
+    // Nouveau client → passer par la modale de confirmation, qui lancera l'USSD.
+    const textIsNewClient =
+      clientLabel.trim() !== "" &&
+      !clients.some((c) => c.name.toLowerCase() === clientLabel.toLowerCase());
+    if (textIsNewClient) {
+      setUssdAfterConfirm(true);
+      setShowNewClientModal(true);
+      return;
+    }
 
     const formData = new FormData(form);
     const beneficiaryPhoneCopy = beneficiaryPhone;
@@ -219,35 +266,7 @@ export default function TransferForm({
     const result = await createTransfer(null, formData);
 
     if (result?.ok) {
-      // Copie le numéro du bénéficiaire dans le presse-papiers (sans l'indicateur)
-      try {
-        await navigator.clipboard.writeText(phoneForUSSD);
-      } catch (err) {
-        console.log("Copie du numéro échouée");
-      }
-
-      // Réinitialiser le formulaire
-      setAmount("");
-      setInitialPayment("");
-      setClientLabel(defaultName);
-      setSelectedClientId(defaultClientId);
-      setIsAnonymous(defaultName.trim().toLowerCase() === "client");
-      const ch = channels.find((c) => c.id === channelId);
-      setFeeBase(s(ch?.feeBase));
-      setFeePerBase(s(ch?.feePerBase));
-      setManualFee("");
-      setWithdrawalOn(false);
-      setBeneficiaryPhone("");
-      setResetKey((k) => k + 1);
-
-      // Scroll en haut
-      window.scrollTo({ top: 0, behavior: "smooth" });
-
-      // Générer le code USSD et le mettre en pending (déclenche le useEffect)
-      const ussdCode = `${ussdPrefix}*${amountCopy}*${phoneForUSSD}*${ussdPassword}${ussdSuffix}`;
-      setTimeout(() => {
-        setPendingUSSD(ussdCode);
-      }, 800);
+      await finishUSSD(phoneForUSSD, amountCopy);
     }
   };
 
@@ -553,7 +572,10 @@ export default function TransferForm({
             </p>
             <div className="flex gap-3 justify-end pt-2">
               <button
-                onClick={() => setShowNewClientModal(false)}
+                onClick={() => {
+                  setShowNewClientModal(false);
+                  setUssdAfterConfirm(false);
+                }}
                 className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-background"
               >
                 Annuler
