@@ -6,15 +6,7 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <!-- ₣ stylisé (franc) en blanc -->
-  <g fill="#ffffff">
-    <!-- fût vertical -->
-    <rect x="206" y="150" width="46" height="212" rx="10"/>
-    <!-- bras supérieur -->
-    <rect x="206" y="150" width="138" height="46" rx="10"/>
-    <!-- bras milieu -->
-    <rect x="206" y="230" width="110" height="44" rx="10"/>
-    <!-- barre du franc (traverse le fût) -->
-    <rect x="182" y="296" width="118" height="32" rx="10"/>
-  </g>
+  <text x="256" y="256" fill="#ffffff" font-family="Arial, Helvetica, sans-serif"
+        font-size="260" font-weight="700" text-anchor="middle"
+        dominant-baseline="central" letter-spacing="6">LS</text>
 </svg>
