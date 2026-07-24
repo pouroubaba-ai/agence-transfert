@@ -1,0 +1,200 @@
+// Schéma du grand livre — Agence de transfert d'argent
+// Principe : l'application NE déplace PAS l'argent. Elle enregistre chaque
+// opération et calcule automatiquement les soldes (qui doit combien à qui).
+// Conçu multi-agences dès le départ (agencyId partout) pour évoluer vers
+// une plateforme, même si la v1 n'utilise qu'une seule agence.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// L'agence (le tenant). En v1 il n'y en a qu'une : celle de l'ami.
+model Agency {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users     User[]
+  clients   Client[]
+  channels  Channel[]
+  transfers Transfer[]
+  payments  Payment[]
+  settings  AgencySettings?
+}
+
+model AgencySettings {
+  id                    String   @id @default(cuid())
+  agencyId              String   @unique
+  agency                Agency   @relation(fields: [agencyId], references: [id])
+
+  ussdPrefix            String   @default("#145#1")
+  ussdPassword          String?
+  ussdSuffix            String   @default("#")
+  settingsPin           String   @default("1234")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([agencyId])
+}
+
+// Comptes internes de l'agence : le patron (OWNER) et ses agents (AGENT).
+model User {
+  id        String   @id @default(cuid())
+  agencyId  String
+  agency    Agency   @relation(fields: [agencyId], references: [id])
+  name      String
+  email     String   @unique
+  password  String // haché
+  role      String   @default("AGENT") // OWNER | AGENT
+  active    Boolean  @default(true)
+
+  // Configuration / garde-fous d'un agent
+  maxAmount     Float? // plafond par transfert (null = illimité)
+  allowedChannelIds String? // liste d'IDs de canaux autorisés, séparés par des virgules (null = tous)
+  canManageFees Boolean @default(false) // droit de modifier les règles de frais
+  canDelete     Boolean @default(false) // droit de supprimer des opérations
+
+  createdAt DateTime @default(now())
+
+  transfersCreated Transfer[] @relation("TransferCreatedBy")
+  paymentsCreated  Payment[]  @relation("PaymentCreatedBy")
+
+  @@index([agencyId])
+}
+
+// Un client de l'agence (celui qui veut envoyer de l'argent).
+model Client {
+  id        String   @id @default(cuid())
+  agencyId  String
+  agency    Agency   @relation(fields: [agencyId], references: [id])
+  name      String
+  phone     String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  transfers Transfer[]
+  payments  Payment[]
+
+  @@index([agencyId])
+}
+
+// Un canal de transfert configurable (Western Union, Banque, Mobile...).
+// Un frais est exprimé « base / feePerBase » : frais = (montant / base) * feePerBase.
+model Channel {
+  id        String   @id @default(cuid())
+  agencyId  String
+  agency    Agency   @relation(fields: [agencyId], references: [id])
+  name      String
+  active    Boolean  @default(true)
+
+  feeMode          String   @default("GENERAL")
+  generalFeeBase   Float?
+  generalFeePerBase Float?
+  clientFeeBase    Float?
+  clientFeePerBase Float?
+
+  createdAt DateTime @default(now())
+
+  transfers Transfer[]
+
+  @@index([agencyId])
+}
+
+// Un transfert demandé par un client.
+// Le client doit à l'agence : (amount + fee) = total.
+model Transfer {
+  id       String @id @default(cuid())
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id])
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id])
+
+  amount Float // montant envoyé au bénéficiaire
+  fee    Float // frais facturés au client
+  total  Float // amount + fee, ce que le client doit
+
+  // Instantané de la règle de frais appliquée à CE transfert (issue du canal,
+  // éventuellement modifiée). feeManual = true si le montant a été saisi à la main.
+  feeBase    Float?
+  feePerBase Float?
+  feeManual  Boolean @default(false)
+
+  // Bénéficiaire (optionnel)
+  beneficiaryName    String?
+  beneficiaryPhone   String?
+  beneficiaryCountry String?
+
+  status String @default("EN_ATTENTE") // EN_ATTENTE | EXECUTE | ANNULE
+  note   String?
+
+  createdById String?
+  createdBy   User?   @relation("TransferCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  payments    Payment[]
+  allocations PaymentAllocation[]
+
+  @@index([agencyId])
+  @@index([clientId])
+}
+
+// Répartition d'UN versement sur UNE dette (transfert). Un même versement peut
+// couvrir plusieurs dettes : il reste une seule ligne dans l'historique, mais
+// avec le détail de ce qu'il a soldé.
+model PaymentAllocation {
+  id         String   @id @default(cuid())
+  paymentId  String
+  payment    Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  transferId String
+  transfer   Transfer @relation(fields: [transferId], references: [id])
+  amount     Float
+
+  @@index([paymentId])
+  @@index([transferId])
+}
+
+// Un versement (tranche de paiement). Représente un mouvement de cash réel
+// vu du point de vue de l'agence.
+//   direction ENTREE = de l'argent entre dans l'agence (un client paie).
+// Un versement concerne un client.
+model Payment {
+  id       String @id @default(cuid())
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id])
+
+  direction String // ENTREE
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  // Versement éventuellement rattaché à un transfert précis
+  transferId String?
+  transfer   Transfer? @relation(fields: [transferId], references: [id])
+
+  amount Float
+  method String? // espèces, mobile money, virement...
+  note   String?
+
+  status String @default("ENREGISTRE") // ENREGISTRE | ANNULE
+
+  createdById String?
+  createdBy   User?   @relation("PaymentCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  allocations PaymentAllocation[]
+
+  @@index([agencyId])
+  @@index([clientId])
+}
