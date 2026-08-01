@@ -23,6 +23,16 @@ export async function requireUser() {
   return user;
 }
 
+/**
+ * Réservé au compte super-administrateur (vue globale sur toutes les agences).
+ * Redirige un utilisateur normal vers l'accueil.
+ */
+export async function requireSuperadmin() {
+  const user = await requireUser();
+  if (user.role !== "SUPERADMIN") redirect("/");
+  return user;
+}
+
 export async function setSession(userId: string) {
   const store = await cookies();
   store.set(COOKIE, userId, {

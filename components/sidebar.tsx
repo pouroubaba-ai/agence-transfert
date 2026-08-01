@@ -144,6 +144,15 @@ export default function Sidebar({
 
           {item("/clients", "☺", "Clients", pathname.startsWith("/clients"))}
 
+          {role === "SUPERADMIN" && (
+            <>
+              <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                Administration
+              </p>
+              {item("/admin", "★", "Admin global", pathname.startsWith("/admin"))}
+            </>
+          )}
+
           <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-muted">
             Configuration
           </p>
@@ -154,7 +163,13 @@ export default function Sidebar({
         <div className="border-t border-border px-3 py-3">
           <div className="px-3 py-2">
             <p className="truncate text-sm font-medium">{name}</p>
-            <p className="text-xs text-muted">{role === "OWNER" ? "Patron" : "Agent"}</p>
+            <p className="text-xs text-muted">
+              {role === "SUPERADMIN"
+                ? "Super Admin"
+                : role === "OWNER"
+                  ? "Patron"
+                  : "Agent"}
+            </p>
           </div>
           <button
             onClick={() => setShowLogoutModal(true)}
