@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireSuperadmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { clientBalance } from "@/lib/ledger";
@@ -75,7 +76,10 @@ export default async function AdminPage() {
 
       <div className="card overflow-hidden">
         <h2 className="font-semibold px-5 py-4 border-b border-border">
-          Détail par agence
+          Détail par agence{" "}
+          <span className="font-normal text-xs text-muted">
+            — clique sur une agence pour voir ses transferts
+          </span>
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
@@ -96,7 +100,11 @@ export default async function AdminPage() {
                   key={r.id}
                   className="border-b border-border last:border-0 hover:bg-background"
                 >
-                  <td className="px-5 py-3 font-medium">{r.name}</td>
+                  <td className="px-5 py-3 font-medium">
+                    <Link href={`/admin/${r.id}`} className="hover:text-primary">
+                      {r.name}
+                    </Link>
+                  </td>
                   <td className="px-5 py-3 text-right text-muted">{r.users}</td>
                   <td className="px-5 py-3 text-right text-muted">{r.clients}</td>
                   <td className="px-5 py-3 text-right text-muted">{r.transfers}</td>

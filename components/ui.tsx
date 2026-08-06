@@ -85,6 +85,7 @@ export function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     EN_ATTENTE: { label: "En attente", cls: "bg-warning/10 text-warning" },
     EXECUTE: { label: "Exécuté", cls: "bg-primary/10 text-primary" },
+    ENREGISTRE: { label: "Enregistré", cls: "bg-primary/10 text-primary" },
     ANNULE: { label: "Annulé", cls: "bg-danger/10 text-danger" },
   };
   const s = map[status] ?? { label: status, cls: "bg-background text-muted" };
